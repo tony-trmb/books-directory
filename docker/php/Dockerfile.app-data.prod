@@ -1,0 +1,14 @@
+FROM public.ecr.aws/docker/library/alpine:latest
+
+WORKDIR /app
+
+COPY --chown=82:82 ./vendor vendor
+COPY --chown=82:82 ./config config
+COPY --chown=82:82 ./bin bin
+COPY --chown=82:82 ./var var
+COPY --chown=82:82 ./public public
+COPY --chown=82:82 ./frontend/.build public
+COPY --chown=82:82 ./src src
+COPY --chown=82:82 ./composer.json ./composer.json
+COPY --chown=82:82 ./composer.lock ./composer.lock
+COPY --chown=82:82 ./symfony.lock ./symfony.lock

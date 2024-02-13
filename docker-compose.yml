@@ -1,0 +1,42 @@
+version: '3.8'
+
+volumes:
+  database_data: ~
+
+networks:
+  default: ~
+
+services:
+  php:
+    container_name: books-directory-php
+    build:
+      context: .
+      dockerfile: ./docker/php/dev.Dockerfile
+    environment:
+      PHP_IDE_CONFIG: "serverName=books_directory"
+    volumes:
+      - ./:/app
+    networks:
+      - default
+
+  nginx:
+    build:
+      dockerfile: Dockerfile
+      context: docker/nginx
+    volumes:
+      - .:/app
+    ports:
+      - '8085:8080'
+    networks:
+      - default
+    depends_on:
+      - php
+
+  database:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: books-directory
+      POSTGRES_USER: directory
+      POSTGRES_PASSWORD: directory
+    ports:
+      - "25432:5432"
