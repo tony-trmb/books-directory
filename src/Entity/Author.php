@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\FilterInterface;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use App\Repository\AuthorRepository;
@@ -23,7 +22,7 @@ use Symfony\Component\Validator\Constraints;
     ],
     normalizationContext: ['groups' => ['author:read']],
 )]
-class Author
+final class Author
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -31,16 +30,16 @@ class Author
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['book:read', 'author:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'author:read', 'book:patch'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
     #[Constraints\Length(min: 3)]
-    #[Groups(['book:read', 'author:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'author:read', 'book:patch'])]
     private ?string $lastname = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['book:read', 'author:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'author:read', 'book:patch'])]
     private ?string $middleName = null;
 
     /**

@@ -1,8 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Validator;
 
 use App\Enum\ImageFormat;
+use App\Validator\Exception\InvalidImageException;
+use App\Validator\Exception\InvalidImageFormatException;
+use App\Validator\Exception\InvalidImageSizeException;
 
 final class ImageValidator implements ValidatorInterface
 {
@@ -16,14 +21,15 @@ final class ImageValidator implements ValidatorInterface
             || null === $fileInfo
             || $fileInfo === $data
         ) {
-            throw new \Exception();
+            throw new InvalidImageException();
         }
 
         if (
-            !\str_contains($fileInfo, ImageFormat::PNG_FORMAT->value)
-            && \str_contains($fileInfo, ImageFormat::JPG_FORMAT->value)
+            !\str_contains($fileInfo, \sprintf('/%s', ImageFormat::PNG_FORMAT->value))
+            && !\str_contains($fileInfo, \sprintf('/%s', ImageFormat::JPEG_FORMAT->value))
+            && !\str_contains($fileInfo, \sprintf('/%s', ImageFormat::JPG_FORMAT->value))
         ) {
-            throw new \Exception();
+            throw new InvalidImageFormatException();
         }
 
         $padding = match (true) {
@@ -34,7 +40,7 @@ final class ImageValidator implements ValidatorInterface
         $imageSize = (float) (\strlen($data) * (3/4)) - $padding;
 
         if ($imageSize > self::MAX_IMAGE_SIZE) {
-            throw new \Exception();
+            throw new InvalidImageSizeException();
         }
     }
 }

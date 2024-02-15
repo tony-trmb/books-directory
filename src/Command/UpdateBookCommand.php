@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-final class CreateBookCommand implements CommandInterface
+final class UpdateBookCommand implements CommandInterface
 {
     public function __construct(
         public string $name,

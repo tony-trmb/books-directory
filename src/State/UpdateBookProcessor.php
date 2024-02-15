@@ -7,11 +7,11 @@ namespace App\State;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Command\CommandBusInterface;
-use App\Command\CreateBookCommand;
+use App\Command\UpdateBookCommand;
 use App\Entity\Book;
 use App\Exception\InvalidRequestBodyException;
 
-class CreateBookProcessor implements ProcessorInterface
+class UpdateBookProcessor implements ProcessorInterface
 {
     public function __construct(
         private readonly CommandBusInterface $commandBus,
@@ -19,8 +19,8 @@ class CreateBookProcessor implements ProcessorInterface
     }
 
     /**
-     * @throws \Throwable
      * @throws InvalidRequestBodyException
+     * @throws \Throwable
      */
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Book
     {
@@ -28,7 +28,7 @@ class CreateBookProcessor implements ProcessorInterface
             throw new InvalidRequestBodyException();
         }
 
-        $command = new CreateBookCommand(
+        $command = new UpdateBookCommand(
             $data->getName(),
             $data->getDescription(),
             $data->getEncodedImage(),

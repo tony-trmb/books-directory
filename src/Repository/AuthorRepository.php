@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\Attribute\AsAlias;
  * @method Author[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 #[AsAlias(id: 'repository.author')]
-class AuthorRepository extends ServiceEntityRepository
+final class AuthorRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

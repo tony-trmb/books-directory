@@ -11,8 +11,11 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use App\Extractor\Dto\ImageExtractorDto;
+use App\Extractor\ImageExtractor;
 use App\Repository\BookRepository;
 use App\State\CreateBookProcessor;
+use App\State\UpdateBookProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -22,40 +25,45 @@ use Doctrine\ORM\Mapping\JoinTable;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: BookRepository::class)]
-#[Post(
-    normalizationContext: ['groups' => 'book:post'],
-    denormalizationContext: ['groups' => 'book:write'],
-    processor: CreateBookProcessor::class
-)]
 #[ApiResource(
     operations: [
-        new Get(),
-        new GetCollection(),
-        new Patch()
-    ],
-    normalizationContext: ['groups' => ['book:read']],
+        new Get(normalizationContext: ['groups' => ['book:read']]),
+        new GetCollection(normalizationContext: ['groups' => ['book:read']]),
+        new Post(
+            uriTemplate: '/books',
+            normalizationContext: ['groups' => 'book:post'],
+            denormalizationContext: ['groups' => 'book:write'],
+            processor: CreateBookProcessor::class
+        ),
+        new Patch(
+            uriTemplate: '/books',
+            normalizationContext: ['groups' => 'book:patch'],
+            denormalizationContext: ['groups' => 'book:patch'],
+            processor: UpdateBookProcessor::class
+        )
+    ]
 )]
 #[ApiFilter(SearchFilter::class, properties: ['id' => 'exact', 'name' => 'exact', 'authors.lastname' => 'exact'])]
-class Book
+final class Book
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[Groups(['book:read', 'author:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'author:read', 'book:patch'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[Groups(['book:read', 'author:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'author:read', 'book:patch'])]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $description = null;
 
-    #[Groups(['book:read', 'author:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'book:patch'])]
     #[ORM\Column(length: 2048, nullable: true)]
     private ?string $image = null;
 
-    #[Groups(['book:read', 'author:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'book:patch'])]
     #[ORM\Column(length: 255)]
     private ?string $publishDate = null;
 
@@ -64,7 +72,7 @@ class Book
      */
     #[ORM\ManyToMany(targetEntity: Author::class, inversedBy: 'books', cascade: ['persist'])]
     #[JoinTable(name: 'book_authors')]
-    #[Groups(['book:read', 'book:write', 'book:post'])]
+    #[Groups(['book:read', 'book:post', 'book:write', 'book:patch'])]
     #[JoinColumn(name: 'book_id', referencedColumnName: 'id')]
     #[InverseJoinColumn(name: 'author_id', referencedColumnName: 'id')]
     private Collection $authors;
@@ -105,6 +113,17 @@ class Book
 
     public function getImage(): ?string
     {
+        if (null === $this->image) {
+            return null;
+        }
+
+        return (new ImageExtractor())->extract(
+            ImageExtractorDto::create($this->image, $this->name)
+        );
+    }
+
+    public function getEncodedImage(): ?string
+    {
         return $this->image;
     }
 
@@ -139,6 +158,13 @@ class Book
     public function removeAuthor(Author $author): static
     {
         $this->authors->removeElement($author);
+
+        return $this;
+    }
+
+    public function clearAuthors(): static
+    {
+        $this->authors->clear();
 
         return $this;
     }

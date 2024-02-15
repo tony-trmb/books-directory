@@ -6,13 +6,14 @@ namespace App\Command;
 
 use App\Entity\Book;
 use App\Enum\ImageFormat;
+use App\Exception\InvalidRequestBodyException;
 use App\Validator\ImageValidator;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
-final class CreateBookCommandHandler
+final class UpdateBookCommandHandler
 {
     public function __construct(
         #[Autowire(service: 'repository.book')]
@@ -22,8 +23,21 @@ final class CreateBookCommandHandler
     ){
     }
 
-    public function __invoke(CreateBookCommand $command): Book
+    public function __invoke(UpdateBookCommand $command): Book
     {
+        /**@var Book $existingBook */
+        $existingBook = $this->bookRepository->findOneBy(
+            [
+                'name' => $command->name,
+                'description' => $command->description,
+                'publishDate' => $command->publishDate
+            ]
+        );
+
+        if (null === $existingBook) {
+            throw new InvalidRequestBodyException();
+        }
+
         try {
             (new ImageValidator())->validate($command->image);
             $validImage = true;
@@ -44,11 +58,11 @@ final class CreateBookCommandHandler
             );
         }
 
-        $book = new Book();
-        $book->setName($command->name);
-        $book->setDescription($command->description);
-        $book->setImage($imageName ?? null);
-        $book->setPublishDate($command->publishDate);
+        $existingBook->setName($command->name);
+        $existingBook->setDescription($command->description);
+        $existingBook->setImage($imageName ?? null);
+        $existingBook->setPublishDate($command->publishDate);
+        $existingBook->clearAuthors();
 
         foreach ($command->authors as $author) {
             $existingAuthor = $this->authorRepository->findOneBy(
@@ -59,16 +73,17 @@ final class CreateBookCommandHandler
                 ]
             );
 
-            $book->addAuthor(null !== $existingAuthor ? $existingAuthor : $author);
+
+            $existingBook->addAuthor(null !== $existingAuthor ? $existingAuthor : $author);
         }
 
-        $this->bookRepository->save($book);
+        $this->bookRepository->save($existingBook);
 
         if (isset($imageName)) {
-            $this->saveImage($command->image, $book->getName(), $imageName);
+            $this->saveImage($command->image, $existingBook->getName(), $imageName);
         }
 
-        return $book;
+        return $existingBook;
     }
 
     private function saveImage(?string $imageData, string $bookName, string $imageName): void
